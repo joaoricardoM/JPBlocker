@@ -1,30 +1,65 @@
 var sleepTime = 1000;
-var banned_ads_servers = ["googleads", "s0.2mdn.net", "filestatic.xyz","spider.ad","ad.lomadee.com","pestilenttidefilth.org","delightspiritedtroop.com","realmpallduns.com","rosqb6vb1cqp.com","dollsdeclare.com","breedtagask.com","348wd7etbann.com","pulpsbarndomed.com","humidmentioned.com","upsghpnqjoo.com","ttgmjfgldgv9ed10.com","jfxkxoicr.com","mimilcnf.pro","appendixwarmingauthors.com","disturbancecoldlilac.com","bgun5cxxi2dv.com","penjazzvice.com","ruthcraveastray.com","lataurir.com","sqhneencmysrk.com","ivfihumeajjmbc.com","fathuntsgall.com","eelfadechi.com","xo28pclotovi.com","mypopads.com","glenprejudice.com","selfswayjay.com","eshncdkjp.com","xclofrfa.com","aulteeby.net","ilohfbiph.com","xcsypkknp.com","dnemkhkbsdbl.com","beheadmuffleddetached.com","riminghoggoofy.com","tfzznclztl.com$third-party","zabanit.xyz","edthoutfre.fun","kaurouby.net","nickeeha.net","alawachi.net","ereenerall.fun","glazegha.com","qbcpicrtdje.com","wvekalpmn.com","finkyepbows.com","jcqwzssqks.com","btnldivewzzfso.com","waspaortascene.com","drawnperink.com","vobquhydgvyqf.com","tunviralbionic.com","zebuaridromps.com","alhypnoom.com","peuzubuqo.com","xyctmmogcv.com","misguidedstork.com","disappearanceinspiredscan.com","skillpropulsion.com","clxrggmghevqfu.com$third-party","edxlewni.com","pdxgfnnoan.com","sporedfryhum.com","statementssupervisorthorough.com","trysprierratty.com","closkeyrespond.com","chewsrompedhemp.com","vjkjjhbi.com","olouphoo.com","suptaibo.com","bighticeate.com","dragonspontaneous.com","dellswhinyrank.com","yepteaswont.com","nzbnjdukgaco.com","ptcqjliwwkldm.com","abroodeuripi.com","brazenwholly.com","aanqylta.com","samplerpouch.com","loftsbaacad.com","deliriousglowing.com","2mdn.net","ads","advertising","propaganda"]
-var banned_adult_servers = ["porn"]
+block_servers_urls_list = ["https://raw.githubusercontent.com/easylist/easylist/master/easylist/easylist_adservers.txt"]
+html_tags_list = ["img", "video", "iframe", "embed", "object", "source", "amp-img"]
 
 function main(){
-    //block_ads();
-    block_adult_content();
+    get_blocked_servers(block_servers_urls_list);
 }
 
-function block_ads(){
-    imgTags = document.querySelectorAll("img");
+function parse_response(response){
+    var splited = response.split("\n");
+    server_list = ""
+
+    splited.forEach((s) => {
+        if (s.includes("||")){
+            server = s.replace("||", "").split("^")[0].split("/")[0];
+            server_list += server + ","
+        }
+        
+    });
+    server_list = server_list.replace(" ", "").replace(window.location.hostname.toString(), "").split(",");
+
+    var interval = setInterval(() => {
+        html_tags_list.forEach((tag) => {
+            block_ads(server_list, tag);
+        });
+    }, sleepTime);
+}
+
+function get_blocked_servers(urls){
+
+    urls.forEach((url) => {
+        var xhttp = new XMLHttpRequest();
+
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                raw_response = xhttp.responseText;
+                parse_response(raw_response);
+            }
+        }
+
+        xhttp.open("GET", url, true);
+        xhttp.send();
+    });
+}
+
+function block_ads(banned_ads_servers, html_tag){
+    imgTags = document.querySelectorAll(html_tag);
+
     imgTags.forEach((tag) => {
         banned_ads_servers.forEach((server) => {
-            if (tag.src.toString().includes(server)){
-                tag.src = "";
+            if (!server == ""){
+                if (html_tag == "object" && tag.data.toString().includes(server)){
+                    console.log("BLOCKED: " + tag.data.toString())
+                    tag.data = "";
+                }
+                else if (tag.src.toString().includes(server)){ 
+                    console.log("BLOCKED: " + tag.src.toString())
+                    tag.src = "";
+                }
             }
-        });
+        });  
     });
-   
 }
 
-function block_adult_content(){
-    if (window.location.href.includes("porn")){
-        window.location.href = "https://www.youtube.com/watch?v=djnyU9-ZyVg"
-    }
-}
-
-var interval = setInterval(() => {
-    main();
-}, sleepTime);
+main();
