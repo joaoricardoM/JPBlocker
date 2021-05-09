@@ -1,2 +1,2 @@
 # JPBlocker
-JP Blocker is an Unwanted Content Block software developed by João Rafa S.A.
+JP Blocker is an Content Block software developed by João Rafa S.A.
