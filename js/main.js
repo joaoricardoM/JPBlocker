@@ -1,65 +1,76 @@
-var sleepTime = 1000;
-block_servers_urls_list = ["https://raw.githubusercontent.com/easylist/easylist/master/easylist/easylist_adservers.txt"]
-html_tags_list = ["img", "video", "iframe", "embed", "object", "source", "amp-img"]
+const sleepTime = 5000 // Aumentar o intervalo para 5 segundos
+const block_servers_urls_list = [
+  "https://blocklistproject.github.io/Lists/adguard/ads-ags.txt",
+  "https://blocklistproject.github.io/Lists/adguard/everything-ags.txt"
+]
+const html_tags_list = [
+  "img",
+  "video",
+  "iframe",
+  "embed",
+  "object",
+  "source",
+  "amp-img"
+]
 
-function main(){
-    get_blocked_servers(block_servers_urls_list);
+async function main() {
+  try {
+    const serverList = await getBlockedServers(block_servers_urls_list)
+    setInterval(() => {
+      html_tags_list.forEach((tag) => blockAds(serverList, tag))
+    }, sleepTime)
+  } catch (error) {
+    console.error(error)
+  }
 }
 
-function parse_response(response){
-    var splited = response.split("\n");
-    server_list = ""
+async function fetchBlockedServers(url) {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch blocked servers from ${url}`)
+  }
+  return response.text()
+}
 
-    splited.forEach((s) => {
-        if (s.includes("||")){
-            server = s.replace("||", "").split("^")[0].split("/")[0];
-            server_list += server + ","
+async function getBlockedServers(urls) {
+  const responses = await Promise.all(
+    urls.map((url) => fetchBlockedServers(url))
+  )
+  const servers = new Set()
+
+  responses.forEach((response) => {
+    const lines = response.split("\n")
+    lines.forEach((line) => {
+      if (line.includes("||")) {
+        const server = line.split("||")[1].split("^")[0].split("/")[0].trim()
+        servers.add(server)
+      }
+    })
+  })
+
+  return [...servers].filter((server) => server !== window.location.hostname)
+}
+
+function blockAds(bannedAdsServers, htmlTag) {
+  const elements = document.querySelectorAll(htmlTag)
+
+  elements.forEach((element) => {
+    bannedAdsServers.forEach((server) => {
+      if (server) {
+        if (
+          htmlTag === "object" &&
+          element.data &&
+          element.data.includes(server)
+        ) {
+          console.log(`BLOCKED: ${htmlTag} - ${element.data}`)
+          element.data = ""
+        } else if (element.src && element.src.includes(server)) {
+          console.log(`BLOCKED: ${htmlTag} - ${element.src}`)
+          element.src = ""
         }
-        
-    });
-    server_list = server_list.replace(" ", "").replace(window.location.hostname.toString(), "").split(",");
-
-    var interval = setInterval(() => {
-        html_tags_list.forEach((tag) => {
-            block_ads(server_list, tag);
-        });
-    }, sleepTime);
+      }
+    })
+  })
 }
 
-function get_blocked_servers(urls){
-
-    urls.forEach((url) => {
-        var xhttp = new XMLHttpRequest();
-
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                raw_response = xhttp.responseText;
-                parse_response(raw_response);
-            }
-        }
-
-        xhttp.open("GET", url, true);
-        xhttp.send();
-    });
-}
-
-function block_ads(banned_ads_servers, html_tag){
-    imgTags = document.querySelectorAll(html_tag);
-
-    imgTags.forEach((tag) => {
-        banned_ads_servers.forEach((server) => {
-            if (!server == ""){
-                if (html_tag == "object" && tag.data.toString().includes(server)){
-                    console.log("BLOCKED: " + tag.data.toString())
-                    tag.data = "";
-                }
-                else if (tag.src.toString().includes(server)){ 
-                    console.log("BLOCKED: " + tag.src.toString())
-                    tag.src = "";
-                }
-            }
-        });  
-    });
-}
-
-main();
+main()

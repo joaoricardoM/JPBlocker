@@ -1,14 +1,12 @@
 {
-    "manifest_version": 2,
+    "manifest_version": 3,
     "version":"1.0.0",
     "name":"J.P Blocker",
     "description":"",
     "author":"Joao & Rafa S.A",
-    "browser_action":{
-        "default_title":"J.P Blocker",
-        "default_popup":"html/index.html",
-        "default_icon":"icon.png" 
-    },
+    "action": {
+        "default_popup": "html/index.html"
+      },
     "content_scripts":[
         {
             "matches":[
